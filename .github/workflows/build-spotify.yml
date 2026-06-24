@@ -24,13 +24,13 @@ jobs:
       - name: Checkout fork source
         uses: actions/checkout@v4
 
-      - name: Cache cargo (ускоряет ре-сборки)
-        uses: Swatinem/rust-cache@v2
-
       - name: Build spotify plugin
         run: cargo build --package gst-plugin-spotify --release
 
-      - name: Sanity-check artifact
+      - name: Strip debug symbols (198 МБ → ~37 МБ)
+        run: strip target/release/libgstspotify.so
+
+      - name: Show artifact
         run: ls -la target/release/libgstspotify.so
 
       - name: Upload libgstspotify.so
