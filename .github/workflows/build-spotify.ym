@@ -1,0 +1,43 @@
+name: Build gst-plugin-spotify (Fedora 44)
+
+on:
+  workflow_dispatch:            # ручной запуск из вкладки Actions
+  push:
+    paths:
+      - '.github/workflows/build-spotify.yml'
+  # schedule:
+  #   - cron: '0 4 * * 1'       # авто-ребилд по понедельникам — раскомментируй для автообновления
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: fedora:44        # КЛЮЧЕВОЕ: сборка ВНУТРИ Fedora 44 → .so под твой GStreamer 1.28 + glibc
+    steps:
+      - name: Install build deps (dnf)
+        run: |
+          dnf install -y \
+            cargo rust clang gcc git pkgconf-pkg-config \
+            gstreamer1-devel gstreamer1-plugins-base-devel \
+            glib2-devel openssl-devel \
+            tar zstd
+
+      - name: Checkout fork source
+        uses: actions/checkout@v4
+
+      - name: Cache cargo (ускоряет ре-сборки)
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build spotify plugin
+        run: cargo build --package gst-plugin-spotify --release
+
+      - name: Sanity-check artifact
+        run: |
+          ls -la target/release/libgstspotify.so
+          file   target/release/libgstspotify.so
+
+      - name: Upload libgstspotify.so
+        uses: actions/upload-artifact@v4
+        with:
+          name: libgstspotify-fedora44
+          path: target/release/libgstspotify.so
+          if-no-files-found: error
